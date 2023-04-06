@@ -24,15 +24,35 @@ jobs:
       - name: Initialization
         run: terraform init
       - name: Check the Plan
-        run: terraform plan
-      - name: Wait for manual approval
-        id: approval
-        uses: peter-evans/wait-for-approval@v2
+        run: terraform plan > plan.txt
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v3
         with:
-          message: "Please review and approve the Terraform plan"
-          reviewers: bharatbalajid
-
+          token: ${{ secrets.TOKEN }}
+          branch: terraform-plan-$(date +%s)
+          commit-message: "Terraform plan for $(date +%F_%T)"
+          title: "Terraform Plan for $(date +%F_%T)"
+          body: |
+            **Terraform Plan**
+            ```
+            $(cat plan.txt)
+            ```
+      - name: Wait for review
+        id: review
+        uses: github-script@v4
+        with:
+          script: |
+            const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
+            const { data: reviews } = await github.pulls.listReviews({
+              owner,
+              repo,
+              pull_number: context.payload.pull_request.number
+            });
+            const approved = reviews.some(review => review.state === "APPROVED");
+            return {approved};
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
       - name: terraform deployment
-        if: steps.approval.outputs.approved == 'true'
+        if: steps.review.outputs.approved == 'true'
         run: terraform apply
-        
