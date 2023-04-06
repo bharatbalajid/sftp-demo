@@ -11,7 +11,7 @@ resource "aws_s3_bucket_acl" "example" {
 }
 resource "aws_s3_bucket_object" "sftb_bucket_obj" {
   bucket   = aws_s3_bucket.sftp_bucket.id
-  for_each = var.key
+  for_each = toset(["user1/", "user2/"])
   key      = each.key
 }
 
