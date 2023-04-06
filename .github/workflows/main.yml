@@ -3,7 +3,7 @@ name: Deploy the code in AWS Environment
 on:
   push:
     branches:
-      - mater
+      - master
 
 jobs:
   build-and-push:
@@ -35,3 +35,4 @@ jobs:
       - name: terraform deployment
         if: steps.approval.outputs.approved == 'true'
         run: terraform apply
+        
