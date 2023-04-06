@@ -3,6 +3,6 @@ variable "region" {
   default = "eu-west-1"
 }
 variable "key" {
-  type    = list
+  type    = list(any)
   default = ["user1/", "user2/"]
 }
