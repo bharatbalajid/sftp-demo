@@ -10,7 +10,8 @@ resource "aws_s3_bucket_acl" "example" {
   acl    = "private"
 }
 resource "aws_s3_bucket_object" "sftb_bucket_obj" {
-  bucket = aws_s3_bucket.sftp_bucket.id
-  key    = var.key
+  bucket   = aws_s3_bucket.sftp_bucket.id
+  for_each = [var.key]
+  key      = each.value
 }
 
