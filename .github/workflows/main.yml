@@ -1,31 +1,49 @@
-- name: Create Pull Request
-  id: cpr
-  uses: peter-evans/create-pull-request@v3
-  with:
-    token: ${{ secrets.TOKEN }}
-    branch: terraform-plan-$(date +%s)
-    commit-message: "Terraform plan for $(date +%F_%T)"
-    title: "Terraform Plan for $(date +%F_%T)"
-    body: |
-      **Terraform Plan**
-      ```
-      $(cat plan.txt)
-      ```
-- name: Wait for review
-  id: review
-  uses: actions/github-script@v4
-  with:
-    script: |
-      const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
-      const { data: reviews } = await github.pulls.listReviews({
-        owner,
-        repo,
-        pull_number: context.payload.pull_request.number
-      });
-      const approved = reviews.some(review => review.state === "APPROVED");
-      return {approved};
-  env:
-    GITHUB_TOKEN: ${{ secrets.TOKEN }}
-- name: terraform deployment
-  if: steps.review.outputs.approved == 'true'
-  run: terraform apply
+name: Deploy the code in AWS Environment
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      
+      - name: Clear Linter issues
+        run: terraform fmt
+      - name: Initialization
+        run: terraform init
+      - name: Check the Plan
+        run: terraform plan > plan.txt
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.TOKEN }}
+          branch: terraform-plan-$(date +%s)
+          commit-message: "Terraform plan for $(date +%F_%T)"
+          title: "Terraform Plan for $(date +%F_%T)"
+          body: |
+            **Terraform Plan**
+            ```
+            $(cat plan.txt)
+            ```
+      - name: Wait for review
+        id: review
+        uses: repo-sync/pull-request-wait-action@v2
+        with:
+          github-token: ${{ secrets.TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+      - name: terraform deployment
+        if: steps.review.outputs.review-approved == 'true'
+        run: terraform apply
