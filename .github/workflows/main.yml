@@ -30,7 +30,7 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.TOKEN }}
-          branch: terraform-plan-$(date +%s)
+          branch: terraform-plan-${{ github.run_number }}
           commit-message: "Terraform plan for $(date +%F_%T)"
           title: "Terraform Plan for $(date +%F_%T)"
           body: |
