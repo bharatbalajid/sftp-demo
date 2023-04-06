@@ -3,7 +3,7 @@ name: Deploy the code in AWS Environment
 on:
   push:
     branches:
-      - main
+      - mater
 
 jobs:
   build-and-push:
