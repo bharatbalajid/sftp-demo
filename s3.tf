@@ -11,6 +11,6 @@ resource "aws_s3_bucket_acl" "example" {
 }
 resource "aws_s3_bucket_object" "sftb_bucket_obj" {
   bucket = aws_s3_bucket.sftp_bucket.id
-  key    = "var.key"
+  key    = var.key
 }
 
