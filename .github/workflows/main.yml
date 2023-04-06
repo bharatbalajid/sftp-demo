@@ -1,0 +1,37 @@
+name: Deploy the code in AWS Environment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      
+      - name: Clear Linter issues
+        run: terraform fmt
+      - name: Initialization
+        run: terraform init
+      - name: Check the Plan
+        run: terraform plan
+      - name: Wait for manual approval
+        id: approval
+        uses: peter-evans/wait-for-approval@v2
+        with:
+          message: "Please review and approve the Terraform plan"
+          reviewers: bharatbalajid
+
+      - name: terraform deployment
+        if: steps.approval.outputs.approved == 'true'
+        run: terraform apply
